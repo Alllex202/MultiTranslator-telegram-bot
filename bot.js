@@ -1,9 +1,11 @@
 const {Telegraf, Markup} = require('telegraf');
 const {googleTranslate, yandexTranslate} = require('./translator');
+const {veryShortTextEn, shortTextEn, longTextEn, veryLongTextEn, nTextEn, shortTextRus, middleTextRus} = require('./test');
 
 const botToken = '1735233409:AAESYbGc677U9HwUuHKPck1PgLI1jxtl98I';
 
 const bot = new Telegraf(botToken);
+
 
 const selectLanguages = {
     from: 'en',
@@ -22,6 +24,16 @@ const menuItems = {
 
 let selectedMenu = menuItems["en-ru"];
 
+const TEST = false;
+
+if (TEST) {
+    console.log('\n====================================================TEST====================================================\n');
+    console.log(middleTextRus.length)
+    googleTranslate(middleTextRus, 'ru', 'en')
+        .then(res => console.log(res))
+        .catch(err => console.log(err.message));
+}
+
 // console.clear()
 
 // bot.use(Telegraf.log());
@@ -30,7 +42,7 @@ bot.start((ctx) => {
     selectedMenu = menuItems["ru-en"];
     selectLanguage('ru', 'en');
     ctx.deleteMessage();
-    ctx.reply(`Здесь можно сравнить переводы из разных сервисов.\n\nСейчас стоит ${flags[selectLanguages.from]} ➡ ${flags[selectLanguages.to]}`,
+    ctx.reply(`Здесь можно сравнить переводы из разных сервисов.\n\nGoogle - 5000 символов (max).\n\nЯндекс - 650 символов (max).\n\nСейчас стоит ${flags[selectLanguages.from]} ➡ ${flags[selectLanguages.to]}`,
         getMainMenu());
 });
 
@@ -49,10 +61,10 @@ bot.hears('🇬🇧 ➡ 🇷🇺', ctx => {
 bot.on('text', async ctx => {
         const google = await googleTranslate(ctx.message.text, selectLanguages.from, selectLanguages.to)
             .then(res => res)
-            .catch(_ => 'Что-то пошло не так 🙁');
+            .catch(err => err.message);
         const yandex = await yandexTranslate(ctx.message.text, selectLanguages.from, selectLanguages.to)
             .then(res => res)
-            .catch(_ => 'Что-то пошло не так 🙁');
+            .catch(err => err.message);
         await ctx.replyWithMarkdown(`${menuItems[`${selectLanguages.from}-${selectLanguages.to}`]}
 
 ${flags[selectLanguages.from]} *Оригинал:* 
@@ -66,7 +78,9 @@ ${flags[selectLanguages.to]} *Яндекс Перевод:*
     }
 );
 
-bot.launch();
+if (!TEST) {
+    bot.launch();
+}
 
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
